@@ -20,7 +20,7 @@ class MovieList(ListView):
             queryset = Movie.objects.filter(start_date__gt=now)
             return queryset
         # all_movies = Movie.objects.all()
-        # for movie in all_movies:  # Delete all movies witch play time has expired
+        # for movie in all_movies:  # Delete all movies in witch play time has expired
         #     if movie.end_date <= now:
         #         movie.delete()
         queryset = Movie.objects.filter(start_date__lte=now).filter(end_date__gt=now)

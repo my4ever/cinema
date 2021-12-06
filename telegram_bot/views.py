@@ -1,11 +1,25 @@
 import json
+import django
+import os
 
 from datetime import datetime as dt
 from django.shortcuts import HttpResponse
 
-from . import orm_commands
-from .create import Bot
+
+# Configure settings for project
+# Need to run this before calling models from application!
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cinema.settings')  # this should be done first.
+
+# Import settings
+django.setup()  # This needs to be done after you set the environ
+
+from telegram_bot import orm_commands
+from telegram_bot.create import Bot
 from cinema.settings import BOT_TOKEN, ADMIN_TELEGRAM_ID
+from parse_data.pars import adding_movies_into_db
+
+
+from movies.models import Movie
 
 data_movies_update = None
 bot = Bot(BOT_TOKEN)
@@ -26,6 +40,7 @@ def telegram_data(request):
     #     'жанры': get_genres(chat_id),
     #     'начало сеансов': get_time(chat_id)
     # }
+    check_data_in_db()
 
     if request.method == 'POST':
 
@@ -84,6 +99,7 @@ def get_movies(chat_id, message):
     if orm_commands.REQUEST[message]():
         send_movie(chat_id, movies)
 
+
 def get_genres(chat_id):
     genres = orm_commands.get_genres()
     message = '\n'.join(genres)
@@ -110,3 +126,23 @@ def get_time(chat_id):
 def get_movies_by_time(chat_id, time):
     movies = orm_commands.get_movies_by_time(time)
     send_movie(chat_id, movies)
+
+
+def check_data_in_db():
+    """Checking for valid date and movie existence in database."""
+    now = dt.now().date()
+    day_of_the_week = dt.now().weekday()
+    print(day_of_the_week)
+    all_movies = Movie.objects.all()
+    if all_movies:
+        for movie in all_movies:  # Delete all movies in witch play time has expired
+            if movie.end_date <= now:
+                movie.delete()
+    movies = Movie.objects.all()
+    if movies:
+        return
+    adding_movies_into_db()
+
+
+check_data_in_db()
+
